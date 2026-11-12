@@ -1,26 +1,140 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+   Alta Vista Coffee — direção clara (design system v2,
+   opendesign/design-systems/alta-vista/tokens/colors_and_type.css)
+------------------------------------------------------------------- */
+@theme {
+  --color-gelo: #f8f6f1;
+  --color-bege: #efe8dc;
+  --color-bege-2: #e6dccb;
+  --color-cafe: #2a1b13;
+  --color-marrom-letra: #6c3018;
+  --color-marrom: #84300c;
+  --color-amarelo: #fcb400;
+  --color-verde: #006c18;
+  --color-queda: #a5361b;
+
+  --font-sans: var(--font-brand), system-ui, sans-serif;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --text-h1: clamp(2.1rem, 1.5rem + 2.2vw, 3.3rem);
+  --text-h1--line-height: 1.08;
+  --text-h2: clamp(1.75rem, 1.35rem + 1.4vw, 2.5rem);
+  --text-h2--line-height: 1.12;
+  --text-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  --text-lead--line-height: 1.6;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* celular: barra de cotações em duas linhas; desktop: uma linha */
+  --bar-h: 3.25rem;
+  --header-h: 4.25rem;
+  --focus: var(--color-marrom-letra);
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (min-width: 768px) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bar-h: 2.5rem;
   }
 }
 
+html {
+  background: var(--color-gelo);
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-gelo);
+  color: var(--color-cafe);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  font-weight: 450;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .title {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  /* rótulo de seção: sentence case, pequeno, no marrom do logo */
+  .kicker {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-marrom-letra);
+  }
+}
+
+::selection {
+  background: var(--color-amarelo);
+  color: var(--color-cafe);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Movimento discreto
+------------------------------------------------------------------- */
+
+/* grãos: deriva lenta em três pontos (sobe, desliza, gira de leve) — parece
+   suspensa no ar, não um "pulo" mecânico. Fases diferentes via --fd/--fdelay. */
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--r, 0deg));
+  }
+  35% {
+    transform: translate3d(3px, -7px, 0) rotate(calc(var(--r, 0deg) + 5deg));
+  }
+  70% {
+    transform: translate3d(-2px, -3px, 0) rotate(calc(var(--r, 0deg) - 3deg));
+  }
+}
+.bean-float {
+  animation: float var(--fd, 7s) ease-in-out infinite;
+  animation-delay: var(--fdelay, 0s);
+}
+
+/* entrada da abertura: uma vez, curta, sem esconder conteúdo se o JS falhar */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.rise {
+  animation: rise 0.9s var(--ease-out) both;
+  animation-delay: var(--d, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,0 +1,46 @@
+/* Alta Vista Coffee — tokens canônicos (v2: direção clara)
+   Fontes: logotipo oficial (cores medidas em symbol.png e wordmark.png) +
+   manual de identidade (Front Estúdio Criativo, Behance 2024) + aplicações
+   claras do manual (logo marrom sobre branco, big bag branco).
+   v2: base branco-gelo/bege por decisão do cliente; preto só em texto. */
+
+:root {
+  /* ---------- cores brutas ---------- */
+  --av-gelo: #f8f6f1; /* fundo principal */
+  --av-bege: #efe8dc; /* fundo de seções alternadas */
+  --av-bege-2: #e6dccb; /* cartões, rodapé, campos */
+  --av-cafe: #2a1b13; /* texto principal */
+  --av-marrom-letra: #6c3018; /* lettering do logo — ações e títulos de apoio */
+  --av-marrom: #84300c; /* hover das ações */
+  --av-amarelo: #fcb400; /* sol do logo — detalhe, foco */
+  --av-verde: #006c18; /* lavoura do logo — indicador "ao vivo", alta */
+  --av-branco: #ffffff; /* faixa de cotações */
+
+  /* ---------- papéis semânticos ---------- */
+  --bg-1: var(--av-gelo);
+  --bg-2: var(--av-bege);
+  --surface: var(--av-bege-2);
+  --fg-1: var(--av-cafe);
+  --fg-2: rgb(42 27 19 / 0.78);
+  --action: var(--av-marrom-letra);
+  --action-hover: var(--av-marrom);
+  --accent: var(--av-amarelo);
+  --border-subtle: rgb(42 27 19 / 0.12);
+  --focus: var(--av-marrom-letra);
+
+  /* ---------- tipografia ---------- */
+  --font-brand: "Glancyr", "Urbanist", system-ui, sans-serif;
+  --h1: 600 clamp(2.1rem, 1.5rem + 2.2vw, 3.3rem) / 1.08 var(--font-brand);
+  --h2: 600 clamp(1.75rem, 1.35rem + 1.4vw, 2.5rem) / 1.12 var(--font-brand);
+  --h3: 600 1.25rem / 1.25 var(--font-brand);
+  --body: 450 1.0625rem / 1.65 var(--font-brand);
+  --caption: 500 0.875rem / 1.4 var(--font-brand);
+
+  /* ---------- espaço, forma, movimento ---------- */
+  --space-section: clamp(4.5rem, 3rem + 4vw, 7rem);
+  --gutter: clamp(1.25rem, 0.75rem + 2vw, 2.5rem);
+  --radius-frame: 6px;
+  --radius-pill: 999px;
+  --shadow-photo: 0 30px 60px -30px rgb(42 27 19 / 0.35);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
