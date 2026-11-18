@@ -21,7 +21,9 @@ export default function Home() {
           Pular para o conteúdo
         </a>
         <Header />
-        <main>
+        {/* clip (não hidden): corta só o que passa da lateral — grãos girando nas bordas —
+            sem criar contêiner de rolagem */}
+        <main className="overflow-x-clip">
           <Abertura />
           <QuemSomos />
           <Diferencial />

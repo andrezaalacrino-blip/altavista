@@ -24,14 +24,13 @@ function Indicator({ quote, label, pair, failing }: { quote: Quote; label: strin
     return () => clearTimeout(t);
   }, [quote.value]);
 
-  // Situação curta. O horário do PREÇO (quotedAt, vindo da fonte) só aparece
-  // quando importa: mercado fechado ou falha de conexão — aí o visitante precisa
-  // saber de quando é o último valor. Nunca é trocado pelo horário da consulta.
-  // O café nunca é rotulado como tempo real se o fornecedor entrega com atraso.
+  // Nenhuma linha de situação visível sob o valor. Mercado aberto/fechado,
+  // horário do preço na fonte e atraso continuam nos dados (data-*) e em texto
+  // só para leitores de tela. O café nunca é rotulado como tempo real.
+  // Falha de conexão: o valor fica esmaecido e o aviso discreto do rodapé do
+  // painel aparece — um valor velho nunca parece preço atual.
   const delayed = quote.id === "coffee-ice" && !quote.realtime;
   const closed = quote.marketOpen === false;
-  const status = closed ? "Mercado fechado" : "Mercado aberto";
-  const showPriceTime = closed || failing;
 
   return (
     <div className={`rounded-[12px] px-1 py-4 transition-colors duration-700 sm:px-2 ${flash ? "bg-amarelo/15" : "bg-transparent"}`}>
@@ -55,7 +54,7 @@ function Indicator({ quote, label, pair, failing }: { quote: Quote; label: strin
         )}
       </div>
 
-      <p className="mt-1.5 flex items-baseline gap-2">
+      <p className={`mt-1.5 flex items-baseline gap-2 transition-opacity ${failing ? "opacity-55" : ""}`}>
         {quote.unit === "R$" && <span className="text-lg font-semibold text-cafe/85">R$</span>}
         <span className="tabular text-[clamp(2rem,1.6rem+1.6vw,2.6rem)] font-semibold leading-none tracking-tight text-cafe">
           {formatNumber(quote.value, quote.id === "usdbrl" ? 4 : 2)}
@@ -68,19 +67,18 @@ function Indicator({ quote, label, pair, failing }: { quote: Quote; label: strin
         )}
       </p>
 
+      {/* situação preservada para tecnologia assistiva e para o código; invisível na tela */}
       <p
-        className="mt-2.5 flex flex-wrap items-center gap-x-1.5 text-sm font-medium text-cafe/90"
+        className="sr-only"
         data-quoted-at={quote.quotedAt}
         data-source={quote.source}
+        data-market-open={String(!closed)}
+        data-delayed={String(delayed)}
       >
-        <span aria-hidden className={`size-1.5 rounded-full ${closed ? "bg-cafe/45" : "bg-verde"}`} />
-        {status}
-        {showPriceTime && (
-          <span>
-            · último preço <time dateTime={quote.quotedAt}>{formatDateTime(quote.quotedAt)}</time>
-          </span>
-        )}
-        {delayed && <span className="font-semibold text-marrom-letra">· Dados com atraso</span>}
+        {closed ? "Mercado fechado" : "Mercado aberto"}. Preço de{" "}
+        <time dateTime={quote.quotedAt}>{formatDateTime(quote.quotedAt)}</time>
+        {delayed && ", dados com atraso"}
+        {failing && ", sem atualização no momento"}.
       </p>
     </div>
   );
@@ -146,7 +144,7 @@ export function QuotesPanel() {
 
       {market.error && (
         <p role="status" className="border-t border-cafe/15 pt-3 text-[0.8125rem] font-semibold text-queda">
-          Sem conexão com as fontes. Exibindo os últimos preços recebidos, com o horário de cada um.
+          Sem atualização no momento. Os valores esmaecidos são os últimos recebidos.
         </p>
       )}
     </section>

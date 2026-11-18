@@ -40,7 +40,8 @@ export function FormDialogProvider({ children }: { children: ReactNode }) {
         className="m-auto max-h-[100dvh] w-full max-w-[720px] overflow-visible bg-transparent p-0 text-cafe backdrop:bg-cafe/40 backdrop:backdrop-blur-sm open:animate-[pop_0.35s_var(--ease-out)]"
       >
         {/* área rolável própria: o formulário inteiro cabe em qualquer altura de tela */}
-        <div className="max-h-[100dvh] overflow-y-auto overscroll-contain px-4 pb-6 pt-14 sm:px-6 sm:pb-10 sm:pt-16">
+        {/* overflow-x-hidden: a luz desfocada atrás do card passa da borda em telas estreitas e não pode gerar rolagem lateral */}
+        <div className="max-h-[100dvh] overflow-y-auto overflow-x-hidden overscroll-contain px-4 pb-6 pt-14 sm:px-6 sm:pb-10 sm:pt-16">
           <div className="relative">
             <button
               type="button"
