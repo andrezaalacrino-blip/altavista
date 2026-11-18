@@ -1,19 +1,26 @@
 import { connection } from "next/server";
 import type { MarketPayload, Quote } from "@/lib/market-types";
-import { deriveCoffeeBrl, fetchCoffeeIce, fetchUsdBrl } from "./sources";
+import { fetchCoffeeIce, fetchCoffeeLicensed, fetchUsdBrl } from "./sources";
 
 /**
- * GET /api/market
- * Roda sempre no servidor: o navegador nunca fala com as fontes.
- * As fontes são cacheadas por 60 s ("use cache" em sources.ts) e a
- * resposta ganha Cache-Control para a CDN da Vercel absorver o tráfego.
+ * GET /api/market — dólar comercial e café arábica ICE NY.
+ *
+ * Roda sempre no servidor (o navegador nunca fala com as fontes). Cada fonte
+ * tem cache próprio ("use cache" em sources.ts), mais curto com o mercado
+ * aberto e mais longo fechado: o número de chamadas ao fornecedor não cresce
+ * com o número de visitantes. O navegador consulta a cada 15 s e a CDN
+ * segura no máximo 10 s (+10 s servindo enquanto busca o novo).
+ *
+ * Café: usa o fornecedor licenciado em tempo real se configurado
+ * (COFFEE_PROVIDER=barchart + BARCHART_API_KEY); senão, a fonte gratuita
+ * com atraso (Yahoo Finance), rotulada como tal na interface.
  */
 export async function GET() {
-  // força execução no momento da requisição (nunca pré-renderizar no build,
-  // senão um erro de rede no deploy viraria resposta estática)
+  // execução por requisição: nunca pré-renderizar no build
   await connection();
 
-  const [usd, ice] = await Promise.allSettled([fetchUsdBrl(), fetchCoffeeIce()]);
+  const licensed = process.env.COFFEE_PROVIDER === "barchart" && !!process.env.BARCHART_API_KEY;
+  const [usd, ice] = await Promise.allSettled([fetchUsdBrl(), licensed ? fetchCoffeeLicensed() : fetchCoffeeIce()]);
 
   const quotes: Quote[] = [];
   const unavailable: MarketPayload["unavailable"] = [];
@@ -27,13 +34,7 @@ export async function GET() {
   if (ice.status === "fulfilled") quotes.push(ice.value);
   else {
     console.error("[market] Café ICE indisponível:", ice.reason);
-    unavailable.push({ id: "coffee-ice", label: "Café Arábica · ICE NY" });
-  }
-
-  if (usd.status === "fulfilled" && ice.status === "fulfilled") {
-    quotes.push(deriveCoffeeBrl(ice.value, usd.value));
-  } else {
-    unavailable.push({ id: "coffee-brl", label: "Café Arábica em reais" });
+    unavailable.push({ id: "coffee-ice", label: "Café arábica ICE NY" });
   }
 
   const body: MarketPayload = { quotes, unavailable, generatedAt: new Date().toISOString() };
@@ -41,9 +42,7 @@ export async function GET() {
   return Response.json(body, {
     status: quotes.length ? 200 : 503,
     headers: {
-      "Cache-Control": quotes.length
-        ? "public, s-maxage=60, stale-while-revalidate=120"
-        : "no-store",
+      "Cache-Control": quotes.length ? "public, max-age=0, s-maxage=10, stale-while-revalidate=10" : "no-store",
     },
   });
 }

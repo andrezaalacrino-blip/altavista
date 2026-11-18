@@ -10,11 +10,13 @@ type MarketState =
 
 const MarketContext = createContext<MarketState>({ status: "loading", data: null, error: null });
 
-const REFRESH_MS = 60_000;
+/** 15 s: barato (bate no cache do nosso servidor, não no fornecedor) e
+ *  mostra um preço novo poucos segundos depois de o servidor recebê-lo. */
+const REFRESH_MS = 15_000;
 
 /**
- * Uma única fonte de dados para a barra do topo e para a seção de
- * mercado: um fetch a cada 60 s, pausado quando a aba está oculta.
+ * Uma única fonte de dados para o painel de cotações do hero:
+ * um fetch a cada 15 s, pausado quando a aba está oculta.
  * Se uma atualização falhar, o último dado válido continua na tela
  * (com o horário real dele) e o erro é sinalizado — nunca um número novo inventado.
  */
@@ -35,21 +37,23 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
           : { status: "error", data: null, error: message },
       );
     };
+    let lastFetch = 0;
     const load = () => {
+      lastFetch = Date.now();
       fetchMarket().then(onData, onError);
     };
-
 
     let timer: ReturnType<typeof setInterval> | undefined;
     const start = () => {
       clearInterval(timer);
       timer = setInterval(load, REFRESH_MS);
     };
+    // ao voltar à aba, só consulta se o dado já passou do intervalo — alternar
+    // visibilidade rapidamente nunca gera rajadas de requisições à fonte
     const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        load();
-        start();
-      } else clearInterval(timer);
+      if (document.visibilityState !== "visible") return clearInterval(timer);
+      if (Date.now() - lastFetch >= REFRESH_MS) load();
+      start();
     };
     load();
     start();

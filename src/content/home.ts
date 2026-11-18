@@ -28,7 +28,7 @@ export const facts = [
 
 /** Mensagens de WhatsApp do material institucional. */
 export const waMessages = {
-  vender: "Olá, quero vender meu café e falar com a Alta Vista Coffee.",
+  vender: "Olá, quero vender meu café e gostaria de conversar com a Alta Vista Coffee.",
   materia:
     "Olá, tenho matéria-prima disponível e gostaria de conversar sobre oportunidades de negociação com a Alta Vista Coffee.",
 };
@@ -69,7 +69,8 @@ export const steps = [
   { title: "Fechamento", text: "Negócio concluído com transparência e segurança — e a porta aberta para o próximo." },
 ] as const;
 
+/** Contato — exclusivamente para quem quer comprar matéria-prima. */
 export const closing = {
-  title: ["Seu café tem valor.", "Vamos conversar?"],
-  text: "Fale diretamente com a Alta Vista Coffee e descubra oportunidades para sua negociação.",
+  title: "Sua próxima negociação começa aqui.",
+  text: "Encontre oportunidades para adquirir matéria-prima com a confiança e a agilidade da Alta Vista Coffee.",
 };

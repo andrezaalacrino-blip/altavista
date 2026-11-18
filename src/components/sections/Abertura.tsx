@@ -1,34 +1,45 @@
 import Image from "next/image";
-import bag from "@/assets/brand/bag-cut.webp";
 import lavoura from "@/assets/photos/lavoura.webp";
 import { facts, hero, waMessages } from "@/content/home";
 import { whatsappLink } from "@/lib/site";
 import { Bean } from "../Bean";
+import { NegocieButton } from "../form/FormDialog";
+import { QuotesPanel } from "../market/QuotesPanel";
 import { WhatsAppIcon } from "../WhatsAppIcon";
 
 const d = (s: number) => ({ "--d": `${s}s` }) as React.CSSProperties;
 
 /**
- * Abertura — clara, equilibrada, sem tela cheia. Texto à esquerda; à
- * direita a lavoura emoldurada, o big bag oficial pousado na borda da foto
- * (nunca sobre o texto) e poucos grãos reais com profundidade.
+ * Abertura — a lavoura ocupa toda a seção como fundo (cover), sob um véu gelo
+ * que garante a leitura. Título e texto à esquerda; painel de cotações em
+ * vidro claro à direita. Os grãos ficam presos aos cantos do painel, ATRÁS
+ * dele: aparecem com profundidade, mas nunca sobre textos ou valores.
  */
 export function Abertura() {
   return (
-    <section id="inicio" aria-labelledby="hero-title" className="relative overflow-hidden bg-gelo pt-[calc(var(--bar-h)+var(--header-h))]">
-      <div className="mx-auto grid max-w-[1320px] gap-12 px-5 pb-14 pt-10 md:px-8 lg:grid-cols-12 lg:items-center lg:gap-8 lg:pb-16 lg:pt-14">
+    <section id="inicio" aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-gelo pt-(--header-h)">
+      {/* fundo: fotografia em toda a largura e altura da abertura */}
+      <div aria-hidden className="absolute inset-0 -z-10">
+        <Image src={lavoura} alt="" fill preload sizes="100vw" className="object-cover object-[center_60%]" />
+        {/* véu gelo ~50% + reforço à esquerda/embaixo, onde está o texto */}
+        <div className="absolute inset-0 bg-gelo/50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gelo/55 via-gelo/10 to-gelo/60 lg:bg-gradient-to-r lg:from-gelo/75 lg:via-gelo/25 lg:to-transparent" />
+      </div>
+
+      <div className="mx-auto grid max-w-[1320px] items-center gap-12 px-5 pb-16 pt-10 md:px-8 md:pt-14 lg:min-h-[620px] lg:grid-cols-12 lg:gap-10 lg:py-16">
         {/* texto */}
-        <div className="lg:col-span-6 lg:pr-6">
+        <div className="lg:col-span-6">
           <p className="kicker rise" style={d(0.05)}>
             {hero.context}
           </p>
           <h1 id="hero-title" className="title rise mt-4 max-w-[16ch] text-h1 text-balance" style={d(0.12)}>
             {hero.title}
           </h1>
-          <p className="rise mt-5 max-w-[44ch] text-pretty text-lead text-cafe/80" style={d(0.2)}>
+          <p className="rise mt-5 max-w-[44ch] text-pretty text-lead font-medium text-cafe/90" style={d(0.2)}>
             {hero.lead}
           </p>
-          <div className="rise mt-8 flex flex-col gap-3 sm:flex-row" style={d(0.28)}>
+          {/* lado a lado a partir de 640 px; empilhados e em largura total no celular */}
+          <div className="rise relative z-20 mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={d(0.28)}>
             <a
               href={whatsappLink(waMessages.vender)}
               target="_blank"
@@ -38,48 +49,19 @@ export function Abertura() {
               <WhatsAppIcon className="size-5" />
               Venda seu café
             </a>
-            <a
-              href={whatsappLink(waMessages.materia)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border-[1.5px] border-marrom-letra/70 px-7 py-3 text-base font-semibold text-marrom-letra transition-colors hover:border-marrom-letra hover:bg-marrom-letra hover:text-gelo"
-            >
-              Negocie sua matéria-prima
-            </a>
+            <NegocieButton className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-marrom-letra bg-gelo/60 px-7 py-3 text-base font-semibold text-marrom-letra backdrop-blur-sm transition-colors hover:bg-marrom-letra hover:text-gelo" />
           </div>
         </div>
 
-        {/* cena: lavoura + big bag + grãos */}
-        <div className="rise relative mx-auto aspect-[10/9] w-full max-w-[560px] sm:aspect-[5/4] lg:col-span-6 lg:max-w-none" style={d(0.18)}>
-          <figure className="absolute right-0 top-0 h-[84%] w-[86%] overflow-hidden rounded-[6px] shadow-[0_30px_60px_-30px_rgba(42,27,19,0.45)]">
-            <Image
-              src={lavoura}
-              alt="Lavoura de café em curvas de nível, ao pôr do sol"
-              fill
-              preload
-              sizes="(max-width: 1023px) 86vw, 560px"
-              className="object-cover"
-            />
-            {/* overlay claro: funde a foto com o fundo do lado do saco */}
-            <div aria-hidden className="absolute inset-0 bg-gradient-to-tr from-gelo/75 via-gelo/10 to-transparent" />
-          </figure>
-
-          {/* sombra de chão do saco */}
-          <div aria-hidden className="absolute bottom-[2%] left-[6%] h-[5%] w-[38%] rounded-[50%] bg-cafe/25 blur-md" />
-          <Image
-            src={bag}
-            alt="Big bag de café com a marca Alta Vista Coffee Ltda., cheio de grãos"
-            loading="eager"
-            sizes="(max-width: 1023px) 40vw, 260px"
-            className="absolute bottom-[3%] left-[4%] h-[78%] w-auto drop-shadow-[0_18px_22px_rgba(42,27,19,0.3)]"
-          />
-
-          {/* grãos: perto do saco (nítidos), um à frente da foto, um ao fundo desfocado */}
-          <Bean n={3} depth="near" rotate={-18} className="bottom-[1%] left-[39%] w-[9%]" />
-          <Bean n={5} depth="near" rotate={30} className="bottom-[0%] left-[1%] w-[5%]" />
-          <Bean n={1} depth="mid" rotate={22} float floatDuration={8} parallax={0.12} className="left-[30%] top-[8%] w-[11%] max-lg:hidden" />
-          <Bean n={2} depth="mid" rotate={-28} float floatDuration={9} floatDelay={1.2} parallax={0.08} className="right-[-3%] top-[62%] w-[8%]" />
-          <Bean n={4} depth="far" rotate={12} float floatDuration={10} floatDelay={0.6} className="right-[20%] top-[-4%] w-[4%] max-lg:hidden" />
+        {/* cotações, com grãos atrás dos cantos do painel */}
+        <div className="rise relative mx-auto w-full max-w-[520px] lg:col-span-6 lg:mr-0" style={d(0.18)}>
+          <Bean n={1} depth="mid" rotate={22} float floatDuration={9} parallax={0.08} className="-left-5 -top-9 z-0 w-14 sm:-left-10 sm:w-20" />
+          <Bean n={3} depth="near" rotate={-18} float floatDuration={10} floatDelay={1.4} className="-bottom-8 -right-4 z-0 w-14 sm:-right-10 sm:w-20" />
+          <Bean n={4} depth="far" rotate={12} float floatDuration={12} floatDelay={0.6} className="-right-14 top-[18%] z-0 w-8 max-lg:hidden" />
+          <Bean n={2} depth="far" rotate={-30} float floatDuration={11} floatDelay={2} className="-left-16 bottom-[22%] z-0 w-9 max-lg:hidden" />
+          <div className="relative z-10">
+            <QuotesPanel />
+          </div>
         </div>
       </div>
 

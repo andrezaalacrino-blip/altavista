@@ -28,17 +28,11 @@
 }
 
 :root {
-  /* celular: barra de cotações em duas linhas; desktop: uma linha */
-  --bar-h: 3.25rem;
+  /* a faixa de cotações saiu (as cotações estão no painel do hero) */
+  --bar-h: 0px;
   --header-h: 4.25rem;
   --focus: var(--color-marrom-letra);
   color-scheme: light;
-}
-
-@media (min-width: 768px) {
-  :root {
-    --bar-h: 2.5rem;
-  }
 }
 
 html {
@@ -113,6 +107,27 @@ body {
 .bean-float {
   animation: float var(--fd, 7s) ease-in-out infinite;
   animation-delay: var(--fdelay, 0s);
+}
+
+/* abertura do popup */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+dialog::backdrop {
+  animation: fade-backdrop 0.3s ease-out;
+}
+/* trava a rolagem da página enquanto o popup estiver aberto — declarativo,
+   não depende do evento "close" (que alguns navegadores atrasam) */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+@keyframes fade-backdrop {
+  from {
+    opacity: 0;
+  }
 }
 
 /* entrada da abertura: uma vez, curta, sem esconder conteúdo se o JS falhar */

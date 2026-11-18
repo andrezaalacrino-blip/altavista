@@ -20,6 +20,15 @@ export type Quote = {
   derived?: boolean;
   /** Casas decimais de exibição. */
   digits: number;
+  /**
+   * Mercado aberto agora, segundo o horário oficial de negociação do ativo
+   * (calculado no servidor). null = não determinável.
+   */
+  marketOpen?: boolean | null;
+  /** Atraso típico da fonte em minutos (dados não-licenciados), quando conhecido. */
+  sourceDelayMin?: number | null;
+  /** true quando a fonte é um fornecedor licenciado em tempo real. */
+  realtime?: boolean;
 };
 
 export type MarketPayload = {

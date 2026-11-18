@@ -32,11 +32,13 @@ export const site = {
     /** texto usado na busca do Google Maps (sem coordenadas inventadas) */
     query: "Sítio Boa Vista, Córrego do Tabuleiro, Santa Rita de Minas - MG, 35326-000",
     /**
-     * Coordenadas CONFIRMADAS pela empresa (ex.: do pin oficial no Google Maps).
-     * Enquanto for null, a seção usa a busca pelo endereço no Google Maps.
-     * Quando preenchido, o mapa interativo (Leaflet) passa a ser usado.
+     * Coordenadas OFICIAIS informadas pela empresa (18/11/2026). Mapa, "Abrir no
+     * Google Maps", "Como chegar" e rodapé usam este ponto exato, não a busca
+     * pelo endereço. Obs.: no OpenStreetMap o ponto fica à margem da Rod. Santos
+     * Dumont (Barra Alegre, CEP 35328-000) — o endereço textual acima segue o
+     * cadastrado até a empresa confirmar se precisa mudar.
      */
-    coordinates: null as null | { lat: number; lng: number },
+    coordinates: { lat: -19.9029483795166, lng: -42.133514404296875 },
   },
 } as const;
 
@@ -66,6 +68,11 @@ export function whatsappLink(message: string = DEFAULT_WA_MESSAGE) {
   return `https://wa.me/${site.whatsapp.digits}?text=${encodeURIComponent(message)}`;
 }
 
-export const mapsDirectionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(site.address.query)}`;
-export const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.address.query)}`;
-export const mapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(site.address.query)}&z=13&output=embed`;
+/** "lat,lng" com a precisão integral fornecida — nada arredondado. */
+const point = `${site.address.coordinates.lat},${site.address.coordinates.lng}`;
+
+/** Link oficial fornecido pela empresa. */
+export const mapsSearchUrl = `https://www.google.com/maps?q=${point}&z=17&hl=pt-BR`;
+/** Rota até o ponto exato (o Google usa a localização do visitante como origem). */
+export const mapsDirectionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${point}`;
+export const mapsEmbedUrl = `https://maps.google.com/maps?q=${point}&z=17&hl=pt-BR&output=embed`;

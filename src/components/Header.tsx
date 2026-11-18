@@ -4,10 +4,9 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import symbol from "@/assets/brand/symbol.png";
 import wordmark from "@/assets/brand/wordmark.png";
-import { nav, site, whatsappLink } from "@/lib/site";
-import { WhatsAppIcon } from "./WhatsAppIcon";
+import { nav } from "@/lib/site";
 
-/** Cabeçalho claro: logo original (lettering marrom), navegação e WhatsApp. */
+/** Cabeçalho claro: logo original à esquerda e navegação centralizada na página. */
 export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -41,8 +40,10 @@ export function Header() {
             : "bg-gelo"
       }`}
     >
-      <div className="mx-auto flex h-(--header-h) max-w-[1320px] items-center justify-between gap-6 px-5 md:px-8">
-        <a href="#inicio" translate="no" className="flex items-center gap-2.5" aria-label="Alta Vista Coffee, início">
+      {/* grade 1fr · auto · 1fr: as duas colunas laterais têm a mesma largura,
+          então o menu fica no centro exato da página, não do espaço que sobra após a logo */}
+      <div className="mx-auto grid h-(--header-h) max-w-[1320px] grid-cols-[1fr_auto] items-center gap-6 px-5 md:px-8 lg:grid-cols-[1fr_auto_1fr]">
+        <a href="#inicio" translate="no" className="flex items-center gap-2.5 justify-self-start" aria-label="Alta Vista Coffee, início">
           <Image src={symbol} alt="" className="size-10" sizes="40px" preload />
           <Image src={wordmark} alt="" className="h-7 w-auto" sizes="130px" preload />
         </a>
@@ -58,23 +59,15 @@ export function Header() {
             ))}
           </ul>
         </nav>
-
-        <a
-          href={whatsappLink()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden items-center gap-2 rounded-full bg-marrom-letra px-5 py-2.5 text-[0.9375rem] font-semibold text-gelo transition-colors hover:bg-marrom lg:inline-flex"
-        >
-          <WhatsAppIcon className="size-4" />
-          Fale conosco
-        </a>
+        {/* coluna direita vazia no desktop: equilibra a da logo */}
+        <span aria-hidden className="hidden lg:block" />
 
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="menu-mobile"
-          className="-mr-2 inline-flex h-11 items-center gap-2.5 px-2 text-[0.9375rem] font-semibold text-cafe lg:hidden"
+          className="-mr-2 inline-flex h-11 items-center gap-2.5 justify-self-end px-2 text-[0.9375rem] font-semibold text-cafe lg:hidden"
         >
           {open ? "Fechar" : "Menu"}
           <span aria-hidden className="relative block h-2.5 w-5">
@@ -103,15 +96,6 @@ export function Header() {
             ))}
           </ul>
         </nav>
-        <a
-          href={whatsappLink()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-8 flex items-center justify-center gap-2 rounded-full bg-marrom-letra py-4 text-base font-semibold text-gelo"
-        >
-          <WhatsAppIcon className="size-5" />
-          WhatsApp {site.whatsapp.display}
-        </a>
       </div>
     </>
   );

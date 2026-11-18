@@ -42,7 +42,12 @@ O indicador CEPEA/ESALQ foi avaliado, mas o site bloqueia acesso automatizado (H
 - [ ] **WhatsApp: confirmar a quantidade de dígitos** de (33) 9960-3393 — tem 8 dígitos após o DDD; celulares costumam ter 9. Hoje o link `wa.me/553399603393` abre um perfil chamado "Alta Vista Coffe". Não alterar sem confirmação (`src/lib/site.ts`).
 - [x] Texto institucional oficial aplicado (`src/content/home.ts`, a partir do HTML informativo)
 - [ ] Confirmar endereço e trocar `site.address.confirmed` para `true` (libera o endereço nos dados estruturados)
-- [ ] Coordenadas confirmadas em `site.address.coordinates` → ativa o mapa interativo Leaflet (até lá: busca do endereço no Google Maps, sinalizada como aproximada)
+- [x] Coordenadas oficiais em `site.address.coordinates` (-19.9029483795166, -42.133514404296875) → mapa, "Abrir no Google Maps", "Como chegar" e rodapé no ponto exato
+- [ ] Confirmar o endereço textual: o ponto fica à margem da Rod. Santos Dumont (Barra Alegre, CEP 35328-000), diferente do cadastrado (Córrego do Tabuleiro, CEP 35326-000)
+
+### Variáveis de ambiente das cotações (opcionais)
+- `AWESOMEAPI_KEY` — chave gratuita da AwesomeAPI (header `x-api-key`): dólar sem o cache de 5 min da CDN deles; 100 mil requisições/mês grátis (consumo previsto ~52 mil/mês por instância).
+- `COFFEE_PROVIDER=barchart` + `BARCHART_API_KEY` — café ICE NY em tempo real por fornecedor licenciado (não testado sem contrato).
 - [x] Direção "Dossiê de origem" aplicada à home inteira (Lighthouse produção: desktop 98, celular emulado 69–74; acessibilidade, boas práticas e SEO 100)
 - [x] Redesign "Do saco ao armazém": cenas do Google Flow guiadas pelo scroll (sequências WebP em `public/seq`, geradas por `node scripts/build-sequences.mjs`), base preta e paleta do logotipo. Design system em `opendesign/design-systems/alta-vista/`. Lighthouse produção: desktop 99, celular 78; acessibilidade/boas práticas/SEO 100.
 - [ ] **Fonte Glancyr** (manual da marca): enviar .woff2 + licença web para `assets-src/fonts`; hoje usa Urbanist como substituta
