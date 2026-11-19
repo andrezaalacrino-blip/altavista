@@ -48,11 +48,12 @@ O indicador CEPEA/ESALQ foi avaliado, mas o site bloqueia acesso automatizado (H
 ### Variáveis de ambiente das cotações (opcionais)
 - `AWESOMEAPI_KEY` — chave gratuita da AwesomeAPI (header `x-api-key`): dólar sem o cache de 5 min da CDN deles; 100 mil requisições/mês grátis (consumo previsto ~52 mil/mês por instância).
 - `COFFEE_PROVIDER=barchart` + `BARCHART_API_KEY` — café ICE NY em tempo real por fornecedor licenciado (não testado sem contrato).
-- `CRON_SECRET` — **obrigatória em produção** para a validação periódica. Sem ela, `/api/market/health` responde 401 em produção.
+- `CRON_SECRET` — opcional. Protege a rota de diagnóstico `/api/market/health`; sem ela, a rota responde 401 em produção (o site não depende dela).
 
-### Validação periódica do café (a cada 20 min)
-- Rota `GET /api/market/health`: compara a fonte (Yahoo `KC=F`, sem cache) com o cache do Next e com o que a CDN entrega em `/api/market`. Se o cache do Next estiver travado, força a renovação. Uma linha `[market-health]` por execução nos logs da Vercel; HTTP 503 quando há problema.
-- Agendamento em `vercel.json` (`*/20 * * * *`). **Atenção:** no plano Hobby da Vercel os cron jobs só rodam uma vez por dia — o intervalo de 20 min exige o plano Pro. Alternativa sem Pro: um agendador externo (ex.: GitHub Actions `schedule` ou cron-job.org) chamando a rota com o cabeçalho `Authorization: Bearer <CRON_SECRET>`.
+### Atualização das cotações (sem Cron Jobs — compatível com Vercel Hobby)
+- O navegador consulta `/api/market` a cada 15 s enquanto a página está aberta; o servidor consulta os fornecedores no máximo a cada 20 s no pregão (120 s fora), com cache por fonte. Nenhum agendamento é necessário.
+- Não há `vercel.json`: o plano Hobby só aceita Cron Jobs diários, e o agendamento de 20 min (`*/20 * * * *`) foi removido.
+- Diagnóstico sob demanda: `GET /api/market/health` (com `Authorization: Bearer <CRON_SECRET>`) compara a fonte do café sem cache com o cache do Next e com o que a CDN entrega em `/api/market`. Para rodar a cada 20 min sem plano Pro, é possível usar um agendador externo (ex.: cron-job.org) chamando essa rota.
 - [x] Direção "Dossiê de origem" aplicada à home inteira (Lighthouse produção: desktop 98, celular emulado 69–74; acessibilidade, boas práticas e SEO 100)
 - [x] Redesign "Do saco ao armazém": cenas do Google Flow guiadas pelo scroll (sequências WebP em `public/seq`, geradas por `node scripts/build-sequences.mjs`), base preta e paleta do logotipo. Design system em `opendesign/design-systems/alta-vista/`. Lighthouse produção: desktop 99, celular 78; acessibilidade/boas práticas/SEO 100.
 - [ ] **Fonte Glancyr** (manual da marca): enviar .woff2 + licença web para `assets-src/fonts`; hoje usa Urbanist como substituta

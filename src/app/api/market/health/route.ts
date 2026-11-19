@@ -5,15 +5,16 @@ import { COFFEE_TAG, fetchCoffeeIce, isOpenNow, loadCoffeeIce, resolveCoffeeCont
 
 /**
  * GET /api/market/health — validação completa do café ICE NY (KC=F).
- * Agendada a cada 20 min pelo Vercel Cron (vercel.json); roda sem depender de
- * visitantes. Compara três camadas com a fonte consultada AGORA, sem cache:
+ * Diagnóstico SOB DEMANDA — não há Cron Job (o plano Hobby da Vercel só aceita
+ * agendamentos diários). Pode ser chamada por um agendador externo, se desejado.
+ * Compara três camadas com a fonte consultada AGORA, sem cache:
  *   1. fonte    — o Yahoo respondeu com preço, variação e horário válidos?
  *   2. servidor — o cache do Next ("use cache") está com o mesmo negócio?
  *   3. CDN      — o que os navegadores recebem em /api/market está em dia?
  * Se o cache do Next estiver travado, força a renovação (revalidateTag).
  * Nunca altera valores: só diagnostica e, se preciso, descarta cache velho.
  *
- * Protegida por CRON_SECRET (o Vercel envia "Authorization: Bearer <segredo>").
+ * Protegida por CRON_SECRET: exige "Authorization: Bearer <segredo>".
  */
 
 /** atraso típico do Yahoo (~20 min) + margem: acima disso, a fonte parou */
