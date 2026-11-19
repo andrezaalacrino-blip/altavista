@@ -1,5 +1,4 @@
-import { mapsDirectionsUrl, mapsEmbedUrl, mapsSearchUrl, site, whatsappLink } from "@/lib/site";
-import { WhatsAppIcon } from "../WhatsAppIcon";
+import { mapsDirectionsUrl, mapsEmbedUrl, mapsSearchUrl, site } from "@/lib/site";
 
 /**
  * Localização — endereço legível, mapa do Google no ponto exato (coordenadas
@@ -41,16 +40,6 @@ export function Localizacao() {
               Como chegar
             </a>
           </div>
-
-          <a
-            href={whatsappLink("Olá! Gostaria de combinar uma visita à Alta Vista Coffee.")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-marrom-letra underline decoration-marrom-letra/40 underline-offset-4 hover:decoration-marrom-letra"
-          >
-            <WhatsAppIcon className="size-4" />
-            Combinar uma visita
-          </a>
         </div>
 
         <div className="lg:col-span-7">
