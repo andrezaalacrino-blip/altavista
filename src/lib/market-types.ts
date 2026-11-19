@@ -29,7 +29,21 @@ export type Quote = {
   sourceDelayMin?: number | null;
   /** true quando a fonte é um fornecedor licenciado em tempo real. */
   realtime?: boolean;
+  /**
+   * Série histórica REAL da sessão, em ordem cronológica (t = epoch ms, v = valor
+   * da fonte). Só pontos publicados pelo fornecedor, nunca interpolados.
+   * null/ausente = histórico indisponível → o minigráfico fica oculto.
+   */
+  history?: HistoryPoint[] | null;
+  /** Contrato específico cotado (ex.: KCH27.NYB) — preço, variação e série são dele. */
+  contract?: string;
+  /** Referência da variação: ajuste da sessão anterior do mesmo contrato. */
+  reference?: HistoryPoint | null;
+  /** Diagnóstico: variação como o fornecedor informa (pode mudar de referência). */
+  sourceChangePct?: number | null;
 };
+
+export type HistoryPoint = { t: number; v: number };
 
 export type MarketPayload = {
   quotes: Quote[];

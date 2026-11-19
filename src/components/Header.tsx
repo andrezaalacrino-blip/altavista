@@ -67,9 +67,10 @@ export function Header() {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="menu-mobile"
-          className="-mr-2 inline-flex h-11 items-center gap-2.5 justify-self-end px-2 text-[0.9375rem] font-semibold text-cafe lg:hidden"
+          aria-label={open ? "Fechar menu" : "Abrir menu"}
+          // só o ícone: área de toque de 44 px, ícone encostado à direita como antes
+          className="-mr-2 inline-flex h-11 w-11 items-center justify-end justify-self-end px-2 text-cafe lg:hidden"
         >
-          {open ? "Fechar" : "Menu"}
           <span aria-hidden className="relative block h-2.5 w-5">
             <span className={`absolute left-0 h-[1.5px] w-5 bg-current transition-transform duration-300 ${open ? "top-1 rotate-45" : "top-0"}`} />
             <span className={`absolute left-0 h-[1.5px] w-5 bg-current transition-transform duration-300 ${open ? "top-1 -rotate-45" : "top-2"}`} />

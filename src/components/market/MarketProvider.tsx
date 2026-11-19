@@ -13,6 +13,8 @@ const MarketContext = createContext<MarketState>({ status: "loading", data: null
 /** 15 s: barato (bate no cache do nosso servidor, não no fornecedor) e
  *  mostra um preço novo poucos segundos depois de o servidor recebê-lo. */
 const REFRESH_MS = 15_000;
+/** tempo máximo exibindo o último valor quando as atualizações falham */
+const MAX_STALE_MS = 5 * 60_000;
 
 /**
  * Uma única fonte de dados para o painel de cotações do hero:
@@ -25,14 +27,20 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const last = useRef<MarketPayload | null>(null);
 
   useEffect(() => {
+    let lastOk = 0;
     const onData = (json: MarketPayload) => {
       last.current = json;
+      lastOk = Date.now();
       setState({ status: "ready", data: json, error: null });
     };
     const onError = (e: unknown) => {
       const message = e instanceof Error ? e.message : "Falha ao atualizar cotações";
+      // o último valor recebido fica (esmaecido) por no máximo 5 min; depois
+      // some e o painel mostra "indisponível" — nunca um preço velho indefinidamente
+      const fresh = last.current && Date.now() - lastOk <= MAX_STALE_MS;
+      if (!fresh) last.current = null;
       setState(
-        last.current
+        fresh && last.current
           ? { status: "ready", data: last.current, error: message }
           : { status: "error", data: null, error: message },
       );

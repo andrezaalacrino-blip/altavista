@@ -1,5 +1,5 @@
-import { cacheLife } from "next/cache";
-import type { Quote } from "@/lib/market-types";
+import { cacheLife, cacheTag } from "next/cache";
+import type { HistoryPoint, Quote } from "@/lib/market-types";
 
 /**
  * Busca das cotações reais. Cada função lança erro em qualquer falha:
@@ -31,7 +31,7 @@ async function getJson(url: string, init?: RequestInit): Promise<unknown> {
  * gratuitas: nesse caso a interface ainda mostra o horário real da última
  * cotação, então nada é inventado.
  */
-function isOpenNow(timeZone: string, open: [number, number], close: [number, number], now = new Date()) {
+export function isOpenNow(timeZone: string, open: [number, number], close: [number, number], now = new Date()) {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false })
       .formatToParts(now)
@@ -105,61 +105,239 @@ export async function fetchUsdBrl(): Promise<Quote> {
   };
 }
 
-/**
- * Café Arábica — contrato futuro ICE NY (KC, 1º vencimento), via Yahoo Finance.
+/*
+ * Café Arábica — contrato futuro ICE NY via Yahoo Finance.
  * Auditoria: a origem responde `no-store` (sem cache intermediário), mas o
  * dado é ATRASADO: a ICE só libera cotação gratuita com atraso (medido em
  * ~20 min com o pregão aberto). Endpoint público sem contrato nem limite
- * documentado — por isso no máximo 1 consulta a cada 20 s no pregão.
- * Tempo real exige fornecedor licenciado (ver fetchCoffeeLicensed).
+ * documentado. Tempo real exige fornecedor licenciado (ver fetchCoffeeLicensed).
+ *
+ * CORREÇÃO (18/11/2026) — dois defeitos do símbolo genérico `KC=F`:
+ * 1. Depois que a ICE publica o ajuste do dia, o Yahoo troca `previousClose`
+ *    pelo AJUSTE DE HOJE (275,45), e `regularMarketChangePercent` passa a
+ *    comparar o último negócio com o próprio ajuste do dia (+0,218%) — não é
+ *    mais a variação diária. A variação correta (Barchart, KCH27): último
+ *    276,05 contra o ajuste anterior 281,40 = −1,90%.
+ * 2. Na rolagem de vencimento, `KC=F` mistura contratos: o rótulo dizia
+ *    "Dec 26", o preço era do Mar/27 e as barras intradiárias começavam no
+ *    Dez/26 (280,75, acima da máxima do Mar/27 no dia).
+ * Solução: descobrir QUAL contrato o `KC=F` está cotando e ler tudo — preço,
+ * ajuste anterior e série — desse mesmo contrato específico (ex.: KCH27.NYB).
+ * A variação é: último preço ÷ ajuste da sessão anterior do MESMO contrato − 1.
+ * Os dois números vêm da fonte (o ajuste anterior é o fechamento diário do
+ * contrato, conferido com o "Previous Close" da Barchart).
  */
+
+export const COFFEE_TAG = "coffee-ice";
+const coffeeOpen = () => isOpenNow("America/New_York", [4, 15], [13, 30]);
+
+type YahooChart = {
+  chart?: {
+    result?: {
+      meta?: {
+        symbol?: string;
+        shortName?: string;
+        currency?: string;
+        regularMarketPrice?: number;
+        regularMarketTime?: number;
+        regularMarketChangePercent?: number;
+        regularMarketVolume?: number;
+      };
+      timestamp?: number[];
+      indicators?: { quote?: { close?: (number | null)[] }[] };
+    }[];
+  };
+};
+const yahoo = async (symbol: string, query: string) =>
+  ((await getJson(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?${query}`)) as YahooChart)
+    .chart?.result?.[0];
+
+/** Data do pregão em Nova York (AAAA-MM-DD) — o calendário da ICE. */
+const nyDay = (ms: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(ms);
+
+/** Próximos vencimentos do café "C": mar (H), mai (K), jul (N), set (U), dez (Z). */
+function nextContracts(now = new Date(), count = 4): string[] {
+  const months: [number, string][] = [[3, "H"], [5, "K"], [7, "N"], [9, "U"], [12, "Z"]];
+  const out: string[] = [];
+  for (let y = now.getUTCFullYear(); out.length < count; y++) {
+    for (const [m, code] of months) {
+      if (out.length < count && (y > now.getUTCFullYear() || m >= now.getUTCMonth() + 1)) {
+        out.push(`KC${code}${String(y).slice(-2)}.NYB`);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Qual contrato o `KC=F` está cotando agora? O que tiver o MESMO último preço
+ * e horário. Sem coincidência (ex.: falha do genérico), usa o de maior volume
+ * no dia — o contrato ativo. Cache de 30 min: a rolagem acontece raramente.
+ */
+export async function resolveCoffeeContract(): Promise<{ symbol: string; name: string; matchedGeneric: boolean }> {
+  "use cache";
+  cacheTag(COFFEE_TAG);
+  cacheLife({ stale: 300, revalidate: 1800, expire: 7200 });
+
+  const [generic, ...cands] = await Promise.allSettled([
+    yahoo("KC=F", "interval=1d&range=1d"),
+    ...nextContracts().map(async (s) => ({ s, m: (await yahoo(s, "interval=1d&range=1d"))?.meta })),
+  ]);
+  const g = generic.status === "fulfilled" ? generic.value?.meta : undefined;
+  const ok = cands
+    .flatMap((c) => (c.status === "fulfilled" && c.value.m?.regularMarketPrice ? [c.value] : []))
+    .filter((c) => c.m?.currency === "USX");
+  const same = ok.filter(
+    (c) => g && c.m!.regularMarketPrice === g.regularMarketPrice && Math.abs((c.m!.regularMarketTime ?? 0) - (g.regularMarketTime ?? 0)) <= 120,
+  );
+  const pick = (same.length ? same : ok).sort((a, b) => (b.m!.regularMarketVolume ?? 0) - (a.m!.regularMarketVolume ?? 0))[0];
+  if (!pick) throw new Error("Yahoo: nenhum contrato de café disponível");
+  return { symbol: pick.s, name: pick.m!.shortName ?? pick.s, matchedGeneric: same.length > 0 };
+}
+
 export async function fetchCoffeeIce(): Promise<Quote> {
   "use cache";
-  const open = isOpenNow("America/New_York", [4, 15], [13, 30]);
-  if (open) cacheLife(OPEN(20));
+  // a etiqueta permite à validação periódica forçar a renovação se o cache travar
+  cacheTag(COFFEE_TAG);
+  if (coffeeOpen()) cacheLife(OPEN(20));
   else cacheLife(CLOSED);
+  const c = await resolveCoffeeContract();
+  return loadCoffeeIce(c.symbol, c.name);
+}
 
-  const data = (await getJson(
-    "https://query1.finance.yahoo.com/v8/finance/chart/KC=F?interval=1d&range=5d",
-  )) as {
-    chart?: {
-      result?: {
-        meta?: {
-          regularMarketPrice?: number;
-          regularMarketTime?: number;
-          regularMarketChangePercent?: number;
-          shortName?: string;
-          currency?: string;
-        };
-      }[];
-    };
-  };
-  const meta = data.chart?.result?.[0]?.meta;
+/**
+ * Leitura do café SEM cache, de um contrato específico — usada pelo
+ * fetchCoffeeIce (com cache) e pela validação periódica.
+ */
+export async function loadCoffeeIce(symbol: string, name: string): Promise<Quote> {
+  const r = await yahoo(symbol, "interval=1d&range=10d");
+  const meta = r?.meta;
   if (!meta) throw new Error("Yahoo: resposta sem meta");
-  if (meta.currency && meta.currency !== "USX") {
-    throw new Error(`Yahoo: unidade inesperada ${meta.currency}`);
-  }
+  if (meta.currency && meta.currency !== "USX") throw new Error(`Yahoo: unidade inesperada ${meta.currency}`);
 
+  const price = num(meta.regularMarketPrice);
+  const tradeMs = num(meta.regularMarketTime) * 1000;
+  const session = nyDay(tradeMs);
+
+  // ajuste da sessão ANTERIOR do mesmo contrato = último fechamento diário antes do dia do negócio
+  const ts = r.timestamp ?? [];
+  const close = r.indicators?.quote?.[0]?.close ?? [];
+  let prev: HistoryPoint | null = null;
+  for (let i = ts.length - 1; i >= 0; i--) {
+    const v = close[i];
+    if (typeof v === "number" && v > 0 && nyDay(ts[i] * 1000) < session) {
+      // barra diária marca a meia-noite do pregão em NY; o ajuste sai no fim do pregão (13h30)
+      prev = { t: ts[i] * 1000 + 13.5 * 3600_000, v };
+      break;
+    }
+  }
+  if (!prev) throw new Error(`Yahoo: sem ajuste anterior para ${symbol}`);
+
+  const code = symbol.replace(".NYB", "");
   return {
     id: "coffee-ice",
     label: "Café Arábica · ICE NY",
-    value: num(meta.regularMarketPrice),
+    value: price,
     unit: "US¢/lb",
-    changePct:
-      typeof meta.regularMarketChangePercent === "number" ? meta.regularMarketChangePercent : null,
+    // variação diária oficial: último preço contra o ajuste anterior do MESMO contrato
+    changePct: (price / prev.v - 1) * 100,
     source: "ICE Futures US via Yahoo Finance",
-    sourceUrl: "https://finance.yahoo.com/quote/KC=F/",
-    quotedAt: new Date(num(meta.regularMarketTime) * 1000).toISOString(),
-    // Auditoria: fonte gratuita, não licenciada — chega com atraso (medido em
-    // ~20 min com o pregão aberto). A interface mostra o atraso real calculado
-    // a partir do horário da cotação, sem número fixo inventado.
-    note: meta.shortName ? `Contrato ${meta.shortName.replace("Coffee ", "")} · dados com atraso` : "Dados com atraso",
+    sourceUrl: `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}/`,
+    quotedAt: new Date(tradeMs).toISOString(),
+    note: `Contrato ${name.replace("Coffee ", "")} (${code}) · dados com atraso`,
     digits: 2,
     // pregão do café arábica (ICE Futures US): 4h15–13h30, horário de Nova York
-    marketOpen: open,
+    marketOpen: coffeeOpen(),
     sourceDelayMin: null,
     realtime: false,
+    contract: symbol,
+    reference: prev,
+    // diagnóstico: o que o Yahoo informa (muda de referência após o ajuste)
+    sourceChangePct: typeof meta.regularMarketChangePercent === "number" ? meta.regularMarketChangePercent : null,
   };
+}
+
+/* ──────────────────────────── séries para os minigráficos ──────────────────────────── */
+
+/** Máximo de pontos enviados por série — suficiente para uma linha de ~100 px. */
+const MAX_POINTS = 96;
+
+/**
+ * Reduz a série escolhendo PONTOS REAIS (nunca médias ou interpolações):
+ * divide o tempo em faixas e fica com o último ponto publicado em cada uma,
+ * sempre preservando o primeiro e o último.
+ */
+function thin(points: HistoryPoint[]): HistoryPoint[] {
+  if (points.length <= MAX_POINTS) return points;
+  const first = points[0];
+  const last = points[points.length - 1];
+  const span = last.t - first.t || 1;
+  const buckets = new Map<number, HistoryPoint>();
+  for (const p of points.slice(1, -1)) buckets.set(Math.floor(((p.t - first.t) / span) * (MAX_POINTS - 2)), p);
+  return [first, ...buckets.values(), last];
+}
+
+/** Cache das séries: o gráfico não precisa do ritmo de 20 s do preço. */
+const HIST_OPEN = { stale: 60, revalidate: 300, expire: 900 };
+const HIST_CLOSED = { stale: 300, revalidate: 1800, expire: 7200 };
+
+/**
+ * Café ICE — barras de 5 min da última sessão, MESMO endpoint `chart` do
+ * preço, do MESMO contrato específico da cotação (não do genérico `KC=F`,
+ * que mistura vencimentos na rolagem). A linha começa no ajuste da sessão
+ * anterior — a mesma referência da variação exibida — e segue pelas barras
+ * reais da sessão; assim a direção da linha sempre bate com a variação.
+ */
+export async function fetchCoffeeHistory(symbol: string, reference: HistoryPoint): Promise<HistoryPoint[]> {
+  "use cache";
+  if (coffeeOpen()) cacheLife(HIST_OPEN);
+  else cacheLife(HIST_CLOSED);
+
+  const r = await yahoo(symbol, "interval=5m&range=1d");
+  if (r?.meta?.currency && r.meta.currency !== "USX") throw new Error(`Yahoo: unidade inesperada ${r.meta.currency}`);
+  const ts = r?.timestamp ?? [];
+  const close = r?.indicators?.quote?.[0]?.close ?? [];
+  // barras sem negócio vêm null: são descartadas, nunca preenchidas
+  const session = ts
+    .map((t, i) => ({ t: t * 1000, v: close[i] }))
+    .filter((p): p is HistoryPoint => typeof p.v === "number" && Number.isFinite(p.v) && p.v > 0 && p.t > reference.t);
+  return thin([reference, ...session]);
+}
+
+/**
+ * Dólar — cotações sequenciais (1 por minuto) da AwesomeAPI, a partir do
+ * fechamento do dia anterior. Auditoria (18/11/2026): `bid − varBid` do dia
+ * é EXATAMENTE o último registro do dia anterior no endpoint `daily`, então a
+ * linha começa num ponto real e termina no preço atual: a direção da linha
+ * sempre bate com a variação mostrada. Com chave: `no-store` na origem.
+ * Consumo: 2 requisições a cada 5 min no pregão / 30 min fora (~4 mil/mês).
+ */
+export async function fetchUsdHistory(): Promise<HistoryPoint[]> {
+  "use cache";
+  if (isOpenNow("America/Sao_Paulo", [9, 0], [18, 0])) cacheLife(HIST_OPEN);
+  else cacheLife(HIST_CLOSED);
+
+  const key = process.env.AWESOMEAPI_KEY;
+  const init = key ? { headers: { "x-api-key": key } } : undefined;
+  type Row = { bid?: string; timestamp?: string };
+  const [daily, seq] = (await Promise.all([
+    getJson("https://economia.awesomeapi.com.br/json/daily/USD-BRL/2", init),
+    // sem chave a fonte limita a 100 itens; com chave, até 1.500
+    getJson(`https://economia.awesomeapi.com.br/json/USD-BRL/${key ? 1000 : 100}`, init),
+  ])) as [Row[], Row[]];
+
+  const toPoint = (r: Row): HistoryPoint | null => {
+    const v = Number(r.bid);
+    const t = Number(r.timestamp) * 1000;
+    return Number.isFinite(v) && v > 0 && Number.isFinite(t) && t > 0 ? { t, v } : null;
+  };
+  const prevClose = daily?.[1] ? toPoint(daily[1]) : null;
+  if (!prevClose) throw new Error("AwesomeAPI: sem fechamento anterior");
+  const session = (seq ?? [])
+    .map(toPoint)
+    .filter((p): p is HistoryPoint => p != null && p.t > prevClose.t)
+    .sort((a, b) => a.t - b.t);
+  return thin([prevClose, ...session]);
 }
 
 /**

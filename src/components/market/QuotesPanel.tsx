@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMarket } from "./MarketProvider";
 import type { Quote, QuoteId } from "@/lib/market-types";
 import { formatDateTime, formatNumber, formatPct, formatTime } from "@/lib/format";
+import { Sparkline } from "./Sparkline";
 
 const ROWS: { id: QuoteId; label: string; pair: string }[] = [
   { id: "usdbrl", label: "Dólar comercial", pair: "USD/BRL" },
@@ -54,18 +55,25 @@ function Indicator({ quote, label, pair, failing }: { quote: Quote; label: strin
         )}
       </div>
 
-      <p className={`mt-1.5 flex items-baseline gap-2 transition-opacity ${failing ? "opacity-55" : ""}`}>
-        {quote.unit === "R$" && <span className="text-lg font-semibold text-cafe/85">R$</span>}
-        <span className="tabular text-[clamp(2rem,1.6rem+1.6vw,2.6rem)] font-semibold leading-none tracking-tight text-cafe">
-          {formatNumber(quote.value, quote.id === "usdbrl" ? 4 : 2)}
-        </span>
-        {/* US¢/lb = centavos de dólar por libra-peso (não dólares) */}
-        {quote.unit !== "R$" && (
-          <abbr title="centavos de dólar por libra-peso" className="text-base font-semibold text-cafe/85 no-underline">
-            {quote.unit}
-          </abbr>
-        )}
-      </p>
+      {/* valor à esquerda, minigráfico à direita na mesma linha: o gráfico (32 px)
+          é mais baixo que o número, então a altura do card não muda */}
+      <div className={`mt-1.5 flex items-center justify-between gap-3 transition-opacity ${failing ? "opacity-55" : ""}`}>
+        <p className="flex min-w-0 items-baseline gap-2">
+          {quote.unit === "R$" && <span className="text-lg font-semibold text-cafe/85">R$</span>}
+          <span className="tabular text-[clamp(2rem,1.6rem+1.6vw,2.6rem)] font-semibold leading-none tracking-tight text-cafe">
+            {formatNumber(quote.value, quote.id === "usdbrl" ? 4 : 2)}
+          </span>
+          {/* US¢/lb = centavos de dólar por libra-peso (não dólares) */}
+          {quote.unit !== "R$" && (
+            <abbr title="centavos de dólar por libra-peso" className="text-base font-semibold text-cafe/85 no-underline">
+              {quote.unit}
+            </abbr>
+          )}
+        </p>
+        <div className="w-[26%] min-w-14 max-w-28 shrink-0">
+          <Sparkline points={quote.history} changePct={quote.changePct} />
+        </div>
+      </div>
 
       {/* situação preservada para tecnologia assistiva e para o código; invisível na tela */}
       <p
