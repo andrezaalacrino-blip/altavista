@@ -26,9 +26,12 @@ export function Abertura() {
         <div className="absolute inset-0 bg-gradient-to-b from-gelo/55 via-gelo/10 to-gelo/60 lg:bg-gradient-to-r lg:from-gelo/75 lg:via-gelo/25 lg:to-transparent" />
       </div>
 
-      <div className="mx-auto grid max-w-[1320px] items-center gap-12 px-5 pb-16 pt-10 md:px-8 md:pt-14 lg:min-h-[620px] lg:grid-cols-12 lg:gap-10 lg:py-16">
+      {/* abaixo de 1024 px: coluna única em flex; o bloco de texto vira "contents" para
+          que os botões (order-last) desçam para baixo do painel sem duplicar elementos.
+          A partir de 1024 px: a grade de duas colunas de sempre. */}
+      <div className="mx-auto flex max-w-[1320px] flex-col px-5 pb-16 pt-10 md:px-8 md:pt-14 lg:grid lg:min-h-[620px] lg:grid-cols-12 lg:items-center lg:gap-10 lg:py-16">
         {/* texto */}
-        <div className="lg:col-span-6">
+        <div className="max-lg:contents lg:col-span-6">
           <p className="kicker rise" style={d(0.05)}>
             {hero.context}
           </p>
@@ -38,8 +41,12 @@ export function Abertura() {
           <p className="rise mt-5 max-w-[44ch] text-pretty text-lead font-medium text-cafe/90" style={d(0.2)}>
             {hero.lead}
           </p>
-          {/* lado a lado a partir de 640 px; empilhados e em largura total no celular */}
-          <div className="rise relative z-20 mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={d(0.28)}>
+          {/* celular: abaixo do painel, empilhados, na largura do painel (20 px de respiro);
+              desktop: lado a lado sob o texto, como antes */}
+          <div
+            className="rise relative z-20 mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap max-lg:order-last max-lg:mx-auto max-lg:mt-5 max-lg:w-full max-lg:max-w-[520px] sm:max-lg:*:flex-1"
+            style={d(0.28)}
+          >
             <a
               href={whatsappLink(waMessages.vender)}
               target="_blank"
@@ -54,9 +61,10 @@ export function Abertura() {
         </div>
 
         {/* cotações, com grãos atrás dos cantos do painel */}
-        <div className="rise relative mx-auto w-full max-w-[520px] lg:col-span-6 lg:mr-0" style={d(0.18)}>
+        <div className="rise relative mx-auto w-full max-w-[520px] max-lg:mt-14 sm:max-lg:mt-16 lg:col-span-6 lg:mr-0" style={d(0.18)}>
           <Bean n={1} depth="mid" rotate={22} float floatDuration={9} parallax={0.08} className="-left-5 -top-9 z-0 w-14 sm:-left-10 sm:w-20" />
-          <Bean n={3} depth="near" rotate={-18} float floatDuration={10} floatDelay={1.4} className="-bottom-8 -right-4 z-0 w-14 sm:-right-10 sm:w-20" />
+          {/* celular: no canto superior direito, para não ficar atrás dos botões logo abaixo do painel */}
+          <Bean n={3} depth="near" rotate={-18} float floatDuration={10} floatDelay={1.4} className="-right-4 z-0 w-14 max-lg:-top-7 sm:-right-10 sm:w-20 lg:-bottom-8" />
           <Bean n={4} depth="far" rotate={12} float floatDuration={12} floatDelay={0.6} className="-right-14 top-[18%] z-0 w-8 max-lg:hidden" />
           <Bean n={2} depth="far" rotate={-30} float floatDuration={11} floatDelay={2} className="-left-16 bottom-[22%] z-0 w-9 max-lg:hidden" />
           <div className="relative z-10">
